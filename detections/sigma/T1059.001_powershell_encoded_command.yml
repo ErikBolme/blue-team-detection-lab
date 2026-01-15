@@ -1,0 +1,38 @@
+title: Suspicious PowerShell Encoded Command
+id: 8f5f1d8d-3a3a-4e5f-9f5d-2a2b9c2b6c11
+status: experimental
+description: Detects PowerShell execution with encoded/obfuscated commands often used in malicious activity.
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+author: ErikBolme
+date: 2026/01/15
+tags:
+  - attack.execution
+  - attack.t1059.001
+
+logsource:
+  product: windows
+  category: process_creation
+
+detection:
+  selection_img:
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+  selection_flags:
+    CommandLine|contains:
+      - ' -enc '
+      - ' -encodedcommand '
+      - ' -e '
+      - ' -ec '
+  selection_alt:
+    CommandLine|contains:
+      - 'FromBase64String'
+      - 'IEX '
+      - 'Invoke-Expression'
+  condition: selection_img and (selection_flags or selection_alt)
+
+falsepositives:
+  - Some admin scripts or deployment tools may legitimately use encoded PowerShell.
+  - Software management tools may invoke PowerShell with encoded content.
+level: medium
