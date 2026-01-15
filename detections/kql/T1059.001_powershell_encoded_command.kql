@@ -1,0 +1,27 @@
+// T1059.001 - PowerShell Encoded Command
+// Two variants below:
+// (A) Microsoft Defender for Endpoint / Microsoft 365 Defender: DeviceProcessEvents
+// (B) Microsoft Sentinel with Sysmon in WindowsEvent table (Sysmon EventID 1)
+
+//////////////////////////////////////////////////////////////
+// (A) MDE / Microsoft 365 Defender
+//////////////////////////////////////////////////////////////
+DeviceProcessEvents
+| where FileName in~ ("powershell.exe","pwsh.exe")
+| where ProcessCommandLine has_any (" -enc ", " -encodedcommand ", " -e ", " -ec ", "FromBase64String", "Invoke-Expression", "IEX ")
+| project Timestamp, DeviceName, AccountName, FileName, ProcessCommandLine, InitiatingProcessFileName, InitiatingProcessCommandLine
+| order by Timestamp desc
+
+//////////////////////////////////////////////////////////////
+// (B) Sentinel + Sysmon (WindowsEvent)
+// Assumes Sysmon logs are ingested to WindowsEvent.
+// Sysmon Process Create = EventID 1
+//////////////////////////////////////////////////////////////
+//WindowsEvent
+//| where EventLog == "Microsoft-Windows-Sysmon/Operational"
+//| where EventID == 1
+//| extend Image = tostring(EventData.Image), CommandLine = tostring(EventData.CommandLine), User = tostring(EventData.User)
+//| where tolower(Image) endswith "\\powershell.exe" or tolower(Image) endswith "\\pwsh.exe"
+//| where CommandLine has_any (" -enc ", " -encodedcommand ", " -e ", " -ec ", "FromBase64String", "Invoke-Expression", "IEX ")
+//| project TimeGenerated, Computer, User, Image, CommandLine
+//| order by TimeGenerated desc
